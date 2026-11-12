@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block titulo %}NumeriArte · Interpolación numérica para la distribución del color{% endblock %}
+
+{% block contenido %}
+<!-- ===================== Encabezado ===================== -->
+<section id="inicio" class="encabezado-hero">
+  <span class="etiqueta">Métodos Numéricos · Interpolación</span>
+  <h1 class="mt-3">NumeriArte: interpolación numérica para la distribución del color</h1>
+  <p class="lead mb-3">
+    Un artista elige tres colores en tres posiciones del mural. Con interpolación polinómica
+    (Lagrange, Newton y Neville) estimamos el color de cualquier posición intermedia y
+    generamos una distribución cromática continua, canal por canal: \(R(x)\), \(G(x)\) y \(B(x)\).
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-degradado" href="#calculadora">Calcular un color</a>
+    <a class="btn btn-contorno" href="#presentacion">Ver la presentación</a>
+  </div>
+</section>
+
+<!-- ===================== Calculadora ===================== -->
+<section id="calculadora" class="seccion">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <form id="form-interpolacion" class="panel h-100" novalidate>
+        <div class="panel-titulo"><span class="paso">1</span><h2>Puntos de control</h2></div>
+        <p class="small text-suave">Define tres colores y su posición en metros (de menor a mayor).</p>
+
+        {% for p in entrada.puntos %}
+        <div class="punto-control mb-3" data-punto="{{ loop.index0 }}" style="--color-punto: {{ p.color }}">
+          <div class="d-flex justify-content-between align-items-center mb-2 ps-2">
+            <span class="indice">Punto \(x_{{ loop.index0 }}\)</span>
+            <span class="small text-tenue mono rgb-punto"></span>
+          </div>
+          <div class="row g-2 ps-2">
+            <div class="col-12 col-sm-4">
+              <label class="form-label" for="nombre-{{ loop.index0 }}">Nombre</label>
+              <input class="form-control form-control-sm campo-nombre" id="nombre-{{ loop.index0 }}"
+                     type="text" maxlength="30" value="{{ p.nombre }}">
+            </div>
+            <div class="col-7 col-sm-5">
+              <label class="form-label" for="hex-{{ loop.index0 }}">Color</label>
+              <div class="d-flex gap-1">
+                <input class="selector-color campo-selector" type="color" value="{{ p.color | lower }}"
+                       aria-label="Selector del color {{ loop.index }}">
+                <input class="form-control form-control-sm mono campo-hex" id="hex-{{ loop.index0 }}"
+                       type="text" maxlength="7" value="{{ p.color }}" spellcheck="false">
+              </div>
+            </div>
+            <div class="col-5 col-sm-3">
+              <label class="form-label" for="x-{{ loop.index0 }}">Posición (m)</label>
+              <input class="form-control form-control-sm campo-x" id="x-{{ loop.index0 }}"
+                     type="number" step="any" inputmode="decimal" value="{{ p.x }}">
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="row g-2 mt-1">
+          <div class="col-6">
+            <label class="form-label" for="x-objetivo">Posición objetivo \(x\) (m)</label>
+            <input class="form-control" id="x-objetivo" type="number" step="any" inputmode="decimal"
+                   value="{{ entrada.x_objetivo }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="metodo">Método</label>
+            <select class="form-select" id="metodo">
+              <option value="lagrange" selected>Lagrange</option>
+              <option value="newton">Newton (dif. divididas)</option>
+              <option value="neville">Neville</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="muestras">Muestras del mural</label>
+            <select class="form-select" id="muestras">
+              <option value="121" selected>121 muestras (cada 0.05 m)</option>
+              <option value="181">181 muestras</option>
+              <option value="241">241 muestras (cada 0.025 m)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="errores" class="alerta-errores mt-3 oculto" role="alert" aria-live="assertive"></div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <button type="submit" class="btn btn-primario" id="btn-calcular">Calcular color</button>
+          <button type="button" class="btn btn-degradado" id="btn-animar">Animar mural</button>
+          <button type="button" class="btn btn-contorno" id="btn-reiniciar">Reiniciar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="panel h-100" id="panel-resultado" aria-live="polite">
+        <div class="panel-titulo"><span class="paso">2</span><h2>Color calculado</h2></div>
+        <div class="tarjeta-color mb-3" id="tarjeta-color" style="background-color: {{ ejemplo.hexadecimal }}">
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <span class="chip-info" id="chip-metodo">{{ ejemplo.metodo }}</span>
+            <span class="chip-info" id="chip-posicion">x = {{ ejemplo.x_objetivo | m }} m</span>
+          </div>
+          <div class="hex-grande" id="hex-grande" style="color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.45)">{{ ejemplo.hexadecimal }}</div>
+        </div>
+        <div class="row g-2">
+          <div class="col-sm-6">
+            <div class="valor-resultado">
+              <div class="rotulo">Resultado decimal</div>
+              <div class="dato" id="res-decimal">
+                ({{ ejemplo.resultado_decimal.r | f5 }}, {{ ejemplo.resultado_decimal.g | f5 }}, {{ ejemplo.resultado_decimal.b | f5 }})
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div class="valor-resultado">
+              <div class="rotulo">RGB</div>
+              <div class="dato" id="res-rgb">({{ ejemplo.resultado_rgb.r }}, {{ ejemplo.resultado_rgb.g }}, {{ ejemplo.resultado_rgb.b }})</div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div class="valor-resultado">
+              <div class="rotulo">Hexadecimal</div>
+              <div class="dato" id="res-hex">{{ ejemplo.hexadecimal }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-2 mt-0">
+          <div class="col-4"><div class="valor-resultado"><div class="rotulo"><span class="punto-canal r"></span>R(x)</div><div class="dato canal-r" id="res-r">{{ ejemplo.resultado_decimal.r | f5 }}</div></div></div>
+          <div class="col-4"><div class="valor-resultado"><div class="rotulo"><span class="punto-canal g"></span>G(x)</div><div class="dato canal-g" id="res-g">{{ ejemplo.resultado_decimal.g | f5 }}</div></div></div>
+          <div class="col-4"><div class="valor-resultado"><div class="rotulo"><span class="punto-canal b"></span>B(x)</div><div class="dato canal-b" id="res-b">{{ ejemplo.resultado_decimal.b | f5 }}</div></div></div>
+        </div>
+        <div class="mensaje-estado mt-3" id="mensaje-estado">{{ ejemplo.mensaje }}</div>
+        <p class="small text-tenue mt-2 mb-0">
+          Conversión: redondear cada canal al entero más cercano → limitar a [0, 255] → convertir a hexadecimal.
+          Tiempo del servidor: <span id="tiempo-ms" class="mono">{{ '%.3f' | format(ejemplo.tiempo_ms) }}</span> ms.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Mural ===================== -->
+<section id="mural" class="seccion">
+  <div class="panel">
+    <div class="panel-titulo"><span class="paso">3</span><h2>Mural animado</h2></div>
+    <p class="small text-suave">
+      El servidor evalúa el método seleccionado en <span id="txt-muestras">{{ ejemplo.mural.total_muestras }}</span>
+      posiciones del mural; el navegador solo pinta los colores recibidos, franja por franja, de izquierda a derecha.
+    </p>
+    <div class="marco-mural"><canvas id="canvas-mural" width="900" height="350" role="img"
+         aria-label="Mural digital con la distribución cromática interpolada"></canvas></div>
+    <div class="progreso-mural mt-3" role="progressbar" aria-label="Progreso del llenado del mural"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="barra" id="barra-mural"></div></div>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-sm btn-degradado" id="btn-mural-play">▶ Reproducir</button>
+        <button type="button" class="btn btn-sm btn-contorno" id="btn-mural-reiniciar">↺ Reiniciar animación</button>
+      </div>
+      <div class="btn-group btn-group-sm" role="group" aria-label="Velocidad de la animación" id="grupo-velocidad">
+        <button type="button" class="btn btn-contorno" data-velocidad="0.5">0.5×</button>
+        <button type="button" class="btn btn-contorno active" data-velocidad="1">1×</button>
+        <button type="button" class="btn btn-contorno" data-velocidad="2">2×</button>
+      </div>
+    </div>
+    <div class="info-franja mt-3" id="info-mural">Pulsa «Reproducir» o «Animar mural» para llenar el mural.</div>
+    <p class="small text-tenue mt-2 mb-0" id="nota-limitacion"></p>
+  </div>
+</section>
+
+<!-- ===================== Procedimiento ===================== -->
+<section id="procedimiento" class="seccion">
+  <div class="panel">
+    <div class="panel-titulo"><span class="paso">4</span><h2>Procedimiento completo</h2></div>
+    <p class="small text-suave">Los cálculos internos conservan toda la precisión; aquí se muestran con cinco decimales.</p>
+    <ul class="nav nav-pills nav-metodos gap-1 mb-3" role="tablist" id="pestanas-metodo">
+      <li class="nav-item"><button class="nav-link active" type="button" data-metodo="lagrange">Lagrange</button></li>
+      <li class="nav-item"><button class="nav-link" type="button" data-metodo="newton">Newton</button></li>
+      <li class="nav-item"><button class="nav-link" type="button" data-metodo="neville">Neville</button></li>
+    </ul>
+    <div id="contenedor-procedimiento"></div>
+  </div>
+</section>
+
+<!-- ===================== Comparación ===================== -->
+<section id="comparacion" class="seccion">
+  <div class="row g-4">
+    <div class="col-xl-7">
+      <div class="panel h-100">
+        <div class="panel-titulo"><span class="paso">5</span><h2>Comparación de métodos</h2></div>
+        <div id="tabla-comparacion"></div>
+        <blockquote class="cita mt-3" id="explicacion-comparacion">{{ ejemplo.comparacion.explicacion }}</blockquote>
+      </div>
+    </div>
+    <div class="col-xl-5">
+      <div class="panel h-100">
+        <div class="panel-titulo"><span class="paso">6</span><h2>Curvas por canal</h2></div>
+        <p class="small text-suave">Valores sin limitar de \(R(x)\), \(G(x)\) y \(B(x)\). Lo que sale de la franja [0, 255] se recorta al pintar.</p>
+        <div style="position:relative; height:260px"><canvas id="grafica-canales" aria-label="Gráfica de los polinomios por canal" role="img"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Presentación ===================== -->
+{% include "_presentacion.html" %}
+
+<script id="datos-iniciales" type="application/json">{{ ejemplo | tojson }}</script>
+<script id="entrada-inicial" type="application/json">{{ entrada | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/animacion_mural.js') }}"></script>
+<script src="{{ url_for('static', filename='js/presentacion.js') }}"></script>
+<script src="{{ url_for('static', filename='js/interpolacion.js') }}"></script>
+{% endblock %}

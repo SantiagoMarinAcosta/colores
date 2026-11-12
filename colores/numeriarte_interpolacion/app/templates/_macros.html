@@ -1,0 +1,81 @@
+{# Macros reutilizables para mostrar colores y tablas numéricas #}
+
+{% macro chip(hexadecimal, texto=None) -%}
+<span class="chip-color"><i style="background: {{ hexadecimal }}"></i>{{ texto or hexadecimal }}</span>
+{%- endmacro %}
+
+{% macro nombre_canal(canal) -%}
+{{ {'r': 'Canal rojo R(x)', 'g': 'Canal verde G(x)', 'b': 'Canal azul B(x)'}[canal] }}
+{%- endmacro %}
+
+{# Tabla de diferencias divididas: fila i, columna k = f[x_i, ..., x_{i+k}] #}
+{% macro tabla_newton(datos, nodos) -%}
+{% set n = nodos | length %}
+<div class="table-responsive">
+<table class="table table-sm tabla-numeriarte align-middle">
+  <thead><tr>
+    <th>i</th><th class="num">x<sub>i</sub></th><th class="num">f[x<sub>i</sub>]</th>
+    <th class="num">f[x<sub>i</sub>, x<sub>i+1</sub>]</th><th class="num">f[x<sub>i</sub>, x<sub>i+1</sub>, x<sub>i+2</sub>]</th>
+  </tr></thead>
+  <tbody>
+  {% for i in range(n) %}
+    <tr>
+      <td>{{ i }}</td><td class="num">{{ nodos[i] | m }}</td>
+      {% for k in range(n) %}
+        {% if i < (datos.columnas[k] | length) %}
+          <td class="num {% if i == 0 %}resaltada{% endif %}">{{ datos.columnas[k][i] | f5 }}</td>
+        {% else %}<td class="vacia">—</td>{% endif %}
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="small text-tenue mb-0">Los valores resaltados (primera fila) son los coeficientes del polinomio de Newton.</p>
+{%- endmacro %}
+
+{# Tabla triangular de Neville: fila i, columna k = P_{i,i+k} #}
+{% macro tabla_neville(datos, nodos) -%}
+{% set n = nodos | length %}
+<div class="table-responsive">
+<table class="table table-sm tabla-numeriarte align-middle">
+  <thead><tr>
+    <th>i</th><th class="num">x<sub>i</sub></th><th class="num">Nivel 0: P<sub>i,i</sub></th>
+    <th class="num">Nivel 1: P<sub>i,i+1</sub></th><th class="num">Nivel 2: P<sub>i,i+2</sub></th>
+  </tr></thead>
+  <tbody>
+  {% for i in range(n) %}
+    <tr>
+      <td>{{ i }}</td><td class="num">{{ nodos[i] | m }}</td>
+      {% for k in range(n) %}
+        {% if i < (datos.niveles[k] | length) %}
+          <td class="num {% if k == n - 1 %}resaltada{% endif %}">{{ datos.niveles[k][i].valor | f5 }}</td>
+        {% else %}<td class="vacia">—</td>{% endif %}
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{%- endmacro %}
+
+{% macro tabla_comparacion(comparacion) -%}
+<div class="table-responsive">
+<table class="table table-sm tabla-numeriarte align-middle">
+  <thead><tr>
+    <th>Método</th><th class="num">R</th><th class="num">G</th><th class="num">B</th>
+    <th>Hexadecimal</th><th class="num">Diferencia máxima</th>
+  </tr></thead>
+  <tbody>
+  {% for f in comparacion.metodos %}
+    <tr>
+      <td class="fw-semibold">{{ f.metodo }}</td>
+      <td class="num">{{ f.decimal.r | f5 }}</td><td class="num">{{ f.decimal.g | f5 }}</td>
+      <td class="num">{{ f.decimal.b | f5 }}</td>
+      <td>{{ chip(f.hexadecimal) }}</td><td class="num">{{ f.diferencia_maxima | f5 }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{%- endmacro %}

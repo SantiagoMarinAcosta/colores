@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Error {{ codigo }} · NumeriArte{% endblock %}
+{% block contenido %}
+<section class="encabezado-hero text-center">
+  <span class="etiqueta">Error {{ codigo }}</span>
+  <h1 class="mt-3">{{ mensaje }}</h1>
+  <p class="lead mx-auto">Vuelve a la interpolación cromática para seguir explorando.</p>
+  <a class="btn btn-degradado mt-2" href="{{ url_for('interpolacion.index') }}">Ir al inicio</a>
+</section>
+{% endblock %}

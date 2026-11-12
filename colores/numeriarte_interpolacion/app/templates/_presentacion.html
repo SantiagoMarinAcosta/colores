@@ -1,0 +1,287 @@
+{% from "_macros.html" import chip, tabla_newton, tabla_neville, tabla_comparacion, nombre_canal %}
+{% set PL = ejemplo.procedimientos.lagrange %}
+{% set PN = ejemplo.procedimientos.newton %}
+{% set PV = ejemplo.procedimientos.neville %}
+{% set D = ejemplo.resultado_decimal %}
+{% set RGB = ejemplo.resultado_rgb %}
+
+<section id="presentacion" class="seccion">
+  <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+    <div>
+      <span class="etiqueta">Presentación integrada</span>
+      <h2 class="mt-2 mb-0">Interpolación aplicada a la distribución del color</h2>
+    </div>
+    <p class="small text-tenue mb-0">← → para navegar · <kbd>F</kbd> pantalla completa</p>
+  </div>
+
+  <div class="presentacion" id="contenedor-presentacion" tabindex="-1" aria-roledescription="presentación">
+    <div class="escenario">
+
+      <!-- 1. Portada -->
+      <article class="diapositiva activa" aria-label="Diapositiva 1: portada">
+        <div class="num-diapo">Métodos Numéricos · NumeriArte</div>
+        <h2 class="portada-titulo">Interpolación numérica aplicada a la distribución del color</h2>
+        <p class="portada-sub">Generación matemática de transiciones cromáticas para un mural digital</p>
+        <div class="franja-portada"></div>
+        <label class="text-suave small d-block" for="campo-expositor">Expositor(a)</label>
+        <input id="campo-expositor" class="campo-expositor" type="text" maxlength="60"
+               placeholder="Escribe tu nombre aquí" autocomplete="name">
+      </article>
+
+      <!-- 2. Problema real -->
+      <article class="diapositiva" aria-label="Diapositiva 2: problema real">
+        <div class="num-diapo">El problema</div>
+        <h2>Un problema real de arte digital</h2>
+        <blockquote class="cita mb-4">Un artista conoce los colores que desea utilizar en tres puntos del mural,
+          pero necesita calcular los tonos intermedios para producir una transición continua.</blockquote>
+        <div class="row g-3">
+          {% for p in ejemplo.puntos %}
+          <div class="col-md-4"><div class="muestra-rgb"><span class="cuadro" style="background:{{ p.color }}"></span>
+            <div><strong>{{ p.nombre }}</strong><br><span class="text-suave">en \(x_{{ loop.index0 }} = {{ p.x | m }}\) m</span></div></div></div>
+          {% endfor %}
+        </div>
+        <p class="mt-4 mb-0">¿Qué color corresponde a \(x = {{ ejemplo.x_objetivo | m }}\) m? ¿Y a cada punto entre 0 y 6 m?</p>
+      </article>
+
+      <!-- 3. Color como dato -->
+      <article class="diapositiva" aria-label="Diapositiva 3: el color como dato numérico">
+        <div class="num-diapo">Representación</div>
+        <h2>El color como dato numérico</h2>
+        <p>Cada color se representa con tres intensidades enteras entre 0 y 255:</p>
+        <div class="text-center my-2">\[ (R,\ G,\ B) \]</div>
+        <div class="row g-3">
+          {% for p in ejemplo.puntos %}
+          <div class="col-md-4"><div class="muestra-rgb"><span class="cuadro" style="background:{{ p.color }}"></span>
+            <div><strong>{{ p.nombre }}</strong><br><span class="mono">({{ p.rgb.r }}, {{ p.rgb.g }}, {{ p.rgb.b }})</span><br>
+            <span class="mono text-tenue">{{ p.color }}</span></div></div></div>
+          {% endfor %}
+        </div>
+        <p class="mt-3 mb-0">Así, un color se convierte en <strong>tres funciones de la posición</strong>: \(R(x)\), \(G(x)\), \(B(x)\).</p>
+      </article>
+
+      <!-- 4. Qué es interpolación -->
+      <article class="diapositiva" aria-label="Diapositiva 4: qué es interpolación">
+        <div class="num-diapo">Concepto</div>
+        <h2>¿Qué es interpolar?</h2>
+        <blockquote class="cita">La interpolación estima valores situados entre puntos conocidos. En este proyecto se
+          utiliza para calcular las componentes RGB de una posición intermedia.</blockquote>
+        <ul class="mt-3">
+          <li>Con 3 puntos existe un único polinomio de grado \(\le 2\) que pasa por todos ellos.</li>
+          <li>Ese polinomio se construye por separado para cada canal.</li>
+          <li>Solo se evalúa dentro de \([x_0, x_2]\): fuera sería extrapolación.</li>
+        </ul>
+      </article>
+
+      <!-- 5. Lagrange -->
+      <article class="diapositiva" aria-label="Diapositiva 5: fórmula de Lagrange">
+        <div class="num-diapo">Método de Lagrange</div>
+        <h2>Fórmula de Lagrange</h2>
+        \[ P(x)=\sum_{i=0}^{n} y_i\,L_i(x), \qquad L_i(x)=\prod_{\substack{j=0\\ j\neq i}}^{n}\frac{x-x_j}{x_i-x_j} \]
+        <p class="mb-1">Para \(x = 4.5\):</p>
+        \[ L_0={{ PL.bases[0].valor | f5 }},\quad L_1={{ PL.bases[1].valor | f5 }},\quad L_2={{ PL.bases[2].valor | f5 }} \]
+        \[ L_0+L_1+L_2={{ PL.suma_bases | f5 }} \]
+      </article>
+
+      <!-- 6. Cálculo RGB -->
+      <article class="diapositiva" aria-label="Diapositiva 6: cálculo de RGB">
+        <div class="num-diapo">Resultado</div>
+        <h2>Cálculo de cada canal en \(x = 4.5\)</h2>
+        <div class="row g-3 align-items-center">
+          <div class="col-md-7">
+            \[ R={{ D.r | f5 }} \]
+            \[ G={{ D.g | f5 }} \]
+            \[ B={{ D.b | f5 }} \]
+            \[ \boxed{RGB=({{ RGB.r }},{{ RGB.g }},{{ RGB.b }})} \qquad \boxed{\texttt{\{{ ejemplo.hexadecimal }}}} \]
+          </div>
+          <div class="col-md-5">
+            <div class="tarjeta-color" style="background: {{ ejemplo.hexadecimal }}; min-height: 200px">
+              <div class="hex-grande" style="color:#fff">{{ ejemplo.hexadecimal }}</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 7. Comparación -->
+      <article class="diapositiva" aria-label="Diapositiva 7: comparación de métodos">
+        <div class="num-diapo">Comparación</div>
+        <h2>Tres caminos, un mismo polinomio</h2>
+        {{ tabla_comparacion(ejemplo.comparacion) }}
+        <p class="mt-3 mb-0">Lagrange, Newton y Neville entregan el mismo resultado porque el polinomio interpolador es
+          único; lo que cambia es <strong>cómo se organiza el cálculo</strong>: bases \(L_i\), tabla de diferencias
+          divididas o tabla triangular de combinaciones.</p>
+      </article>
+
+      <!-- 8. Animación -->
+      <article class="diapositiva" aria-label="Diapositiva 8: animación del mural">
+        <div class="num-diapo">Visualización</div>
+        <h2>El mural se llena de izquierda a derecha</h2>
+        <div class="marco-mural"><canvas id="canvas-diapositiva" width="900" height="350" role="img"
+             aria-label="Mural animado de la presentación"></canvas></div>
+        <div class="progreso-mural mt-2"><div class="barra" id="barra-diapositiva"></div></div>
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+          <button type="button" class="btn-diapo" id="btn-diapo-play">▶ Reproducir</button>
+          <button type="button" class="btn-diapo" id="btn-diapo-reiniciar">↺ Reiniciar</button>
+          <span class="info-franja" id="info-diapositiva"></span>
+        </div>
+      </article>
+
+      <!-- 9. Importancia informática -->
+      <article class="diapositiva" aria-label="Diapositiva 9: importancia informática">
+        <div class="num-diapo">Informática</div>
+        <h2>¿Por qué importa en computación?</h2>
+        <div class="grid-aplicaciones">
+          <div>🎨 Diseño gráfico</div><div>🖼️ Procesamiento de imágenes</div><div>🌈 Degradados</div>
+          <div>🎞️ Animación (fotogramas intermedios)</div><div>🔬 Visualización científica</div>
+          <div>🧩 Reconstrucción de imágenes</div><div>🖥️ Gráficos generados por computadora</div>
+        </div>
+        <p class="mt-3 mb-0">Cada píxel, cuadro o franja intermedia se obtiene a partir de pocos datos conocidos.</p>
+      </article>
+
+      <!-- 10. Conclusión -->
+      <article class="diapositiva" aria-label="Diapositiva 10: conclusión">
+        <div class="num-diapo">Conclusión</div>
+        <h2>Conclusión</h2>
+        <blockquote class="cita">La interpolación transforma puntos de color aislados en una distribución continua.
+          El método permite que una computadora estime tonos intermedios mediante operaciones matemáticas reproducibles.</blockquote>
+        <div class="franja-portada" style="max-width:none"></div>
+        <p class="text-suave mb-0">¡Gracias! · <span class="nombre-expositor-texto"></span></p>
+      </article>
+    </div>
+
+    <div class="pie-diapositiva">
+      <button type="button" class="btn-diapo" id="btn-anterior" aria-label="Diapositiva anterior">←</button>
+      <div class="puntos-diapositivas" id="puntos-diapositivas" role="tablist" aria-label="Ir a diapositiva"></div>
+      <span class="contador" id="contador-diapositivas" aria-live="polite">1 / 10</span>
+      <span class="nombre-expositor-pie d-none d-md-inline nombre-expositor-texto"></span>
+      <button type="button" class="btn-diapo" id="btn-pantalla" title="Pantalla completa (F)" aria-label="Pantalla completa">⛶</button>
+      <button type="button" class="btn-diapo" id="btn-siguiente" aria-label="Diapositiva siguiente">→</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Explicación académica ===================== -->
+<section id="explicacion" class="seccion">
+  <div class="panel explicacion">
+    <span class="etiqueta">Explicación académica</span>
+    <h2 class="mt-2">Del problema artístico al color <span class="mono">{{ ejemplo.hexadecimal }}</span></h2>
+
+    <h3><span class="n">01</span> Problema artístico</h3>
+    <p>Un artista quiere una transición continua entre carmesí, morado y azul a lo largo de un mural de 6 m.
+      Solo define el color en tres posiciones; los tonos intermedios deben calcularse de forma reproducible.</p>
+
+    <h3><span class="n">02</span> Datos iniciales</h3>
+    <div class="table-responsive">
+      <table class="table table-sm tabla-numeriarte">
+        <thead><tr><th>Nodo</th><th class="num">Posición</th><th>Color</th><th class="num">R</th><th class="num">G</th><th class="num">B</th></tr></thead>
+        <tbody>
+        {% for p in ejemplo.puntos %}
+          <tr><td>\(x_{{ loop.index0 }}\)</td><td class="num">{{ p.x | m }} m</td><td>{{ chip(p.color, p.nombre ~ ' ' ~ p.color) }}</td>
+            <td class="num">{{ p.rgb.r }}</td><td class="num">{{ p.rgb.g }}</td><td class="num">{{ p.rgb.b }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p>Posición objetivo: \(x = {{ ejemplo.x_objetivo | m }}\) m.</p>
+
+    <h3><span class="n">03</span> Definición del método</h3>
+    <p>La interpolación polinómica busca un polinomio \(P\) de grado \(\le n\) tal que \(P(x_i) = y_i\) para cada nodo.
+      Con \(n+1 = 3\) nodos distintos el polinomio existe y es único. Se construye uno para cada canal:
+      \(R(x)\), \(G(x)\) y \(B(x)\).</p>
+
+    <h3><span class="n">04</span> Fórmula general</h3>
+    <div class="bloque-formula">
+      <h5>Lagrange</h5>
+      \[ P(x)=\sum_{i=0}^{n} y_i L_i(x),\qquad L_i(x)=\prod_{\substack{j=0\\ j\neq i}}^{n}\frac{x-x_j}{x_i-x_j} \]
+      <h5>Newton (diferencias divididas)</h5>
+      \[ P(x)=f[x_0]+f[x_0,x_1](x-x_0)+f[x_0,x_1,x_2](x-x_0)(x-x_1) \]
+      <h5>Neville</h5>
+      \[ P_{i,j}(x)=\frac{(x-x_i)\,P_{i+1,j}(x)-(x-x_j)\,P_{i,j-1}(x)}{x_j-x_i} \]
+    </div>
+
+    <h3><span class="n">05</span> Sustitución (bases de Lagrange en \(x=4.5\))</h3>
+    <div class="bloque-formula">
+      \[ L_0(4.5)=\frac{(4.5-3)(4.5-6)}{(0-3)(0-6)}={{ PL.bases[0].valor | f5 }} \]
+      \[ L_1(4.5)=\frac{(4.5-0)(4.5-6)}{(3-0)(3-6)}={{ PL.bases[1].valor | f5 }} \]
+      \[ L_2(4.5)=\frac{(4.5-0)(4.5-3)}{(6-0)(6-3)}={{ PL.bases[2].valor | f5 }} \]
+      \[ L_0+L_1+L_2={{ PL.suma_bases | f5 }} \]
+    </div>
+
+    <h3><span class="n">06</span> Cálculo por canal</h3>
+    <div class="bloque-formula">
+      \[ R(4.5)=220(-0.125)+128(0.75)+30(0.375)={{ D.r | f5 }} \]
+      \[ G(4.5)=20(-0.125)+0(0.75)+144(0.375)={{ D.g | f5 }} \]
+      \[ B(4.5)=60(-0.125)+128(0.75)+255(0.375)={{ D.b | f5 }} \]
+    </div>
+
+    <h3><span class="n">07</span> Tablas de Newton y Neville</h3>
+    <div class="row g-3">
+      {% for c in ['r', 'g', 'b'] %}
+      <div class="col-lg-6">
+        <div class="tarjeta-canal {{ c }}">
+          <div class="cabecera">Newton · {{ nombre_canal(c) }}</div>
+          <div class="cuerpo">{{ tabla_newton(PN.canales[c], PN.nodos) }}</div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="tarjeta-canal {{ c }}">
+          <div class="cabecera">Neville · {{ nombre_canal(c) }}</div>
+          <div class="cuerpo">{{ tabla_neville(PV.canales[c], PV.nodos) }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="bloque-formula">
+      <h5>Polinomios de Newton resultantes</h5>
+      \[ R(x)=220-30.66667x-0.33333x(x-3) \]
+      \[ G(x)=20-6.66667x+9.11111x(x-3) \]
+      \[ B(x)=60+22.66667x+3.27778x(x-3) \]
+    </div>
+
+    <h3><span class="n">08</span> Resultado</h3>
+    <div class="d-flex flex-wrap align-items-center gap-3">
+      <div class="tarjeta-color" style="background: {{ ejemplo.hexadecimal }}; min-height: 120px; min-width: 200px">
+        <div class="hex-grande" style="color:#fff">{{ ejemplo.hexadecimal }}</div>
+      </div>
+      <div style="min-width:0; flex:1 1 260px; overflow-x:auto">
+        \[ ({{ D.r | f5 }},\ {{ D.g | f5 }},\ {{ D.b | f5 }}) \;\longrightarrow\; \boxed{RGB=({{ RGB.r }},{{ RGB.g }},{{ RGB.b }})} \;\longrightarrow\; \boxed{\texttt{\{{ ejemplo.hexadecimal }}}} \]
+        <p class="small text-suave mb-0">80 = 0x50, 52 = 0x34, 184 = 0xB8.</p>
+      </div>
+    </div>
+
+    <h3><span class="n">09</span> Comparación</h3>
+    {{ tabla_comparacion(ejemplo.comparacion) }}
+    <blockquote class="cita mt-3">{{ ejemplo.comparacion.explicacion }}</blockquote>
+
+    <h3><span class="n">10</span> Interpretación informática</h3>
+    <p>Una computadora no "imagina" los tonos: evalúa tres polinomios en cientos de posiciones y convierte cada
+      resultado a un color de pantalla. Este es el mismo principio que usan los degradados de un programa de diseño,
+      el escalado de imágenes, los fotogramas intermedios de una animación y los mapas de color de la visualización
+      científica. El resultado es <strong>reproducible</strong>: los mismos datos siempre generan el mismo mural.</p>
+
+    <h3><span class="n">11</span> Ventajas y limitaciones</h3>
+    <div class="table-responsive">
+      <table class="table table-sm tabla-numeriarte align-middle">
+        <thead><tr><th>Método</th><th>Ventaja</th><th>Limitación</th><th>Uso recomendado</th></tr></thead>
+        <tbody>
+          <tr><td class="fw-semibold">Lagrange</td><td>Fórmula directa y fácil de explicar.</td><td>Debe reconstruirse al agregar puntos.</td><td>Ejemplos académicos con pocos colores.</td></tr>
+          <tr><td class="fw-semibold">Newton</td><td>Permite incorporar puntos adicionales.</td><td>Requiere tabla de diferencias.</td><td>Distribuciones que crecerán con nuevos colores.</td></tr>
+          <tr><td class="fw-semibold">Neville</td><td>Calcula directamente el punto deseado.</td><td>No entrega inmediatamente el polinomio completo.</td><td>Consultar colores en posiciones concretas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloque-formula mt-3" id="limitaciones">
+      <h5>Limitaciones que no deben ocultarse</h5>
+      <ul class="mb-0">
+        <li><strong>Espacio RGB.</strong> La interpolación se hace en RGB porque facilita la explicación matemática,
+          pero RGB no representa uniformemente la percepción humana: distancias iguales en RGB no se ven como cambios
+          de color iguales. Espacios como CIELAB u OKLab son perceptualmente más uniformes.</li>
+        <li><strong>Valores fuera de rango.</strong> Un polinomio puede producir valores menores que 0 o mayores que 255.
+          En este ejemplo \(G(x)=20-6.66667x+9.11111x(x-3)\) es negativo entre aproximadamente 0.73 y 3 m
+          (por ejemplo \(G(1.5)=-10.5\)); por eso la aplicación limita cada canal con
+          \(\operatorname{clamp}(v)=\min(255,\max(0,v))\) e informa cuántas muestras se recortaron.</li>
+        <li><strong>Grado del polinomio.</strong> Con muchos puntos equiespaciados, un único polinomio puede oscilar
+          (fenómeno de Runge). Para murales con muchos colores convienen interpolaciones por tramos o splines.</li>
+      </ul>
+    </div>
+  </div>
+</section>

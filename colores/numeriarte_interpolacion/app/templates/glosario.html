@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block titulo %}Glosario · NumeriArte{% endblock %}
+
+{% block contenido %}
+<section class="encabezado-hero">
+  <span class="etiqueta">Glosario</span>
+  <h1 class="mt-3">Vocabulario de la interpolación cromática</h1>
+  <p class="lead mb-0">{{ terminos | length }} términos de interpolación, métodos numéricos, color y arte digital.</p>
+</section>
+
+<section class="seccion">
+  <div class="panel">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label" for="buscador-glosario">Buscar término o definición</label>
+        <input id="buscador-glosario" class="form-control" type="search" placeholder="Ej.: Neville, hexadecimal, clamp…" autocomplete="off">
+      </div>
+      <div class="col-md-6">
+        <div class="filtros-glosario d-flex flex-wrap gap-2" role="group" aria-label="Filtrar por categoría">
+          <button type="button" class="btn btn-sm btn-contorno active" data-categoria="todas">Todas</button>
+          {% for clave, nombre in categorias.items() %}
+          <button type="button" class="btn btn-sm btn-contorno" data-categoria="{{ clave }}">{{ nombre }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <p class="small text-tenue mt-3 mb-0" id="contador-glosario" aria-live="polite"></p>
+  </div>
+
+  <div class="row g-3 mt-1" id="lista-glosario">
+    {% for t in terminos %}
+    <div class="col-md-6 col-xl-4 item-glosario" data-categoria="{{ t.categoria }}">
+      <article class="termino-glosario">
+        <div class="categoria cat-{{ t.categoria }}">{{ t.categoria_nombre }}</div>
+        <h3 class="texto-termino">{{ t.termino }}</h3>
+        <p class="mb-0 text-suave texto-definicion">{{ t.definicion }}</p>
+      </article>
+    </div>
+    {% endfor %}
+  </div>
+  <div id="sin-resultados" class="panel text-center mt-3 oculto">
+    No se encontraron términos. Prueba con otra palabra o selecciona «Todas».
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  var buscador = document.getElementById("buscador-glosario");
+  var items = Array.prototype.slice.call(document.querySelectorAll(".item-glosario"));
+  var botones = document.querySelectorAll("[data-categoria]");
+  var contador = document.getElementById("contador-glosario");
+  var vacio = document.getElementById("sin-resultados");
+  var categoria = "todas";
+
+  // Guarda el texto original para poder resaltar coincidencias sin perderlo.
+  items.forEach(function (it) {
+    it._termino = it.querySelector(".texto-termino").textContent;
+    it._definicion = it.querySelector(".texto-definicion").textContent;
+  });
+
+  function normalizar(t) {
+    return t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+  function escapar(t) {
+    return t.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; });
+  }
+  function resaltar(texto, consulta) {
+    if (!consulta) return escapar(texto);
+    var norm = normalizar(texto), i = norm.indexOf(consulta);
+    if (i < 0) return escapar(texto);
+    return escapar(texto.slice(0, i)) + "<mark>" + escapar(texto.slice(i, i + consulta.length)) + "</mark>" +
+           escapar(texto.slice(i + consulta.length));
+  }
+
+  function filtrar() {
+    var q = normalizar(buscador.value.trim());
+    var visibles = 0;
+    items.forEach(function (it) {
+      var okCat = categoria === "todas" || it.dataset.categoria === categoria;
+      var okTxt = !q || normalizar(it._termino + " " + it._definicion).indexOf(q) >= 0;
+      var ver = okCat && okTxt;
+      it.classList.toggle("oculto", !ver);
+      if (ver) {
+        visibles++;
+        it.querySelector(".texto-termino").innerHTML = resaltar(it._termino, q);
+        it.querySelector(".texto-definicion").innerHTML = resaltar(it._definicion, q);
+      }
+    });
+    contador.textContent = "Mostrando " + visibles + " de " + items.length + " términos.";
+    vacio.classList.toggle("oculto", visibles > 0);
+  }
+
+  buscador.addEventListener("input", filtrar);
+  botones.forEach(function (b) {
+    b.addEventListener("click", function () {
+      categoria = b.dataset.categoria;
+      botones.forEach(function (o) { o.classList.toggle("active", o === b); });
+      filtrar();
+    });
+  });
+  filtrar();
+})();
+</script>
+{% endblock %}
